@@ -231,13 +231,13 @@ function StockSection() {
 
 // ── WhatsApp Screenshots Carousel (infinite marquee) ──
 const whatsappImages = [
-  "/images/whatsapp/depoimento-1.webp",
-  "/images/whatsapp/depoimento-2.webp",
-  "/images/whatsapp/depoimento-3.webp",
-  "/images/whatsapp/depoimento-4.webp",
-  "/images/whatsapp/depoimento-5.webp",
-  "/images/whatsapp/depoimento-6.webp",
-  "/images/whatsapp/depoimento-7.webp",
+  "/images/depoimento-1.webp",
+  "/images/depoimento-2.webp",
+  "/images/depoimento-3.webp",
+  "/images/depoimento-4.webp",
+  "/images/depoimento-5.webp",
+  "/images/depoimento-6.webp",
+  "/images/depoimento-7.webp",
 ];
 
 function getCoverflowTransform(offset: number) {
@@ -251,12 +251,28 @@ function getCoverflowTransform(offset: number) {
 
 function WhatsAppCarousel() {
   const [active, setActive] = useState(0);
+  const [containerHeight, setContainerHeight] = useState<number>(480);
+  const centerImgRef = useRef<HTMLImageElement>(null);
   const total = whatsappImages.length;
 
   useEffect(() => {
     const id = setInterval(() => setActive(n => (n + 1) % total), 3600);
     return () => clearInterval(id);
   }, [total]);
+
+  // Atualiza a altura do container com base na imagem central renderizada
+  const updateHeight = () => {
+    if (centerImgRef.current) {
+      const h = centerImgRef.current.offsetHeight;
+      if (h > 0) setContainerHeight(h);
+    }
+  };
+
+  useEffect(() => {
+    // Pequeno delay para a imagem ter tempo de renderizar com o novo tamanho
+    const t = setTimeout(updateHeight, 60);
+    return () => clearTimeout(t);
+  }, [active]);
 
   const visibleRange = [-2, -1, 0, 1, 2];
   const CARD_W = "clamp(220px, 72vw, 300px)";
@@ -265,7 +281,12 @@ function WhatsAppCarousel() {
     <div className="select-none">
       <div
         className="relative overflow-visible mx-auto"
-        style={{ perspective: "1100px", perspectiveOrigin: "50% 50%", height: "clamp(390px, 120vw, 530px)" }}
+        style={{
+          perspective: "1100px",
+          perspectiveOrigin: "50% 50%",
+          height: containerHeight,
+          transition: "height 0.45s cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
       >
         {visibleRange.map(offset => {
           const idx = ((active + offset) % total + total) % total;
@@ -305,8 +326,10 @@ function WhatsAppCarousel() {
               onClick={() => !isCenter && setActive(idx)}
             >
               <img
+                ref={isCenter ? centerImgRef : undefined}
                 src={whatsappImages[idx]}
                 alt={`Depoimento de cliente ${idx + 1}`}
+                onLoad={isCenter ? updateHeight : undefined}
                 style={{
                   width: "100%",
                   height: "auto",
