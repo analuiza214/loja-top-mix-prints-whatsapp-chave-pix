@@ -252,13 +252,15 @@ function getCoverflowTransform(offset: number) {
 function WhatsAppCarousel() {
   const [active, setActive] = useState(0);
   const [containerHeight, setContainerHeight] = useState<number>(480);
+  const [paused, setPaused] = useState(false);
   const centerImgRef = useRef<HTMLImageElement>(null);
   const total = whatsappImages.length;
 
   useEffect(() => {
+    if (paused) return;
     const id = setInterval(() => setActive(n => (n + 1) % total), 3600);
     return () => clearInterval(id);
-  }, [total]);
+  }, [total, paused]);
 
   // Atualiza a altura do container com base na imagem central renderizada
   const updateHeight = () => {
@@ -277,8 +279,37 @@ function WhatsAppCarousel() {
   const visibleRange = [-2, -1, 0, 1, 2];
   const CARD_W = "clamp(220px, 72vw, 300px)";
 
+  const dragStartX = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 50; // px mínimo para considerar swipe
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragStartX.current = e.clientX;
+    setPaused(true);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (dragStartX.current !== null) {
+      const delta = e.clientX - dragStartX.current;
+      if (delta < -SWIPE_THRESHOLD) setActive(n => (n + 1) % total);       // arrastou pra esquerda → próxima
+      else if (delta > SWIPE_THRESHOLD) setActive(n => (n - 1 + total) % total); // arrastou pra direita → anterior
+    }
+    dragStartX.current = null;
+    setPaused(false);
+  };
+
+  const handlePointerLeave = () => {
+    dragStartX.current = null;
+    setPaused(false);
+  };
+
   return (
-    <div className="select-none">
+    <div
+      className="select-none"
+      style={{ touchAction: "pan-y" }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+    >
       <div
         className="relative overflow-visible mx-auto"
         style={{
